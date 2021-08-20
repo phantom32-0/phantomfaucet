@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 #phentem facet
 
-DEBUG = False 
+DEBUG = True
+PORT = 5000
+
+DISABLED = False
+disabledMessage = "faucet is disabled"
+
+minimumDUCOfromFaucet = 0.1
+maximumDUCOfromFaucet = 0.2
 
 # Start import modules
 
@@ -21,8 +28,7 @@ randomducoamount = 0
 app = Flask(__name__)
 limiter = Limiter(
     app,
-    key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"]
+    key_func=get_remote_address
 )
 # Start Global variables
 
@@ -54,8 +60,8 @@ def faucetpage():
 @app.route("/faucetchungus", methods=["POST"])
 @limiter.limit("1 per hour")
 def giveducos():
-    return "currently faucet is temporarily disabled because some users are abusing the faucet(i am looking at you, darestz), i will rewrite the whole server backend to prevent it thanks for supporting the faucet :)",500
-    randomducoamount = random.uniform(0.1,0.25)
+    if DISABLED: return disabledMessage,500
+    randomducoamount = random.uniform(minimumDUCOfromFaucet,maximumDUCOfromFaucet)
     if DEBUG: randomducoamount = 0.00069 # debugging purposes
 
     soc = socket.socket()
@@ -104,4 +110,4 @@ if not __name__ == "__main__":
     print("imported as python module, exiting")
     quit()
 
-app.run(debug=DEBUG,host="0.0.0.0",port=80)
+app.run(debug=DEBUG,host="0.0.0.0",port=PORT)
