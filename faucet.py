@@ -41,10 +41,10 @@ ducosererPorts = [2811,2812,2813]
 minimumFaucetBalance = 10
 
 class timers:
-    usersnamelist = {}
-    usersiplist = {}
-    ipsfaucethtml = {}
-    ipsfavicon = {}
+    usersnamelist = []
+    usersiplist = []
+    ipsfaucethtml = []
+    ipsfavicon = []
 
 # End Global variables
 
@@ -52,12 +52,12 @@ class timers:
 
 def faucettimerreset(): # reset the faucet timers at the start of every hour
     while(1):
-        if(round(time.time()) % 3600):
-            faucetlog("RESET FAUCET TIMER POG")
-            timers.usersnamelist = {}
-            timers.usersiplist = {}
-            timers.ipsfaucethtml = {}
-            timers.ipsfavicon = {}
+        if((round(time.time()) % 3600) == 0):
+            faucetlog(f"RESET FAUCET TIMER POG users this hour: {timers.usersnamelist}")
+            timers.usersnamelist = []
+            timers.usersiplist = []
+            timers.ipsfaucethtml = []
+            timers.ipsfavicon = []
         time.sleep(0.99)
 
 def faucetlog(log): # logger
@@ -66,6 +66,7 @@ def faucetlog(log): # logger
 
 @app.route("/", methods=["GET"])
 def indexpage():
+
     return render_template("index.html", faucetversion=faucetVersion)
 
 @app.route("/faucet", methods=["GET"])
