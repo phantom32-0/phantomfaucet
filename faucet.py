@@ -32,22 +32,37 @@ limiter = Limiter(
 )
 # Start Global variables
 
-faucetVersion = "Phantom Faucet beta 0.1.1"
+faucetVersion = "Phantom Faucet beta 0.2"
 faucetUsername = "phantom_faucet"
-faucetMessage = "phantom32.tk faucet giving extra rewards!!"
+faucetMessage = "phantom32.tk duinocion fauet come bakc sooon"
 faucetPassword = os.getenv("FAUCET_PASSWORD")
 ducoserverAddress = "server.duinocoin.com"
 ducosererPorts = [2811,2812,2813]
 minimumFaucetBalance = 10
 
+class timers:
+    usersnamelist = {}
+    usersiplist = {}
+    ipsfaucethtml = {}
+    ipsfavicon = {}
+
 # End Global variables
 
 # Start init flask routes
 
+def faucettimerreset(): # reset the faucet timers at the start of every hour
+    while(1):
+        if(round(time.time()) % 3600):
+            faucetlog("RESET FAUCET TIMER POG")
+            timers.usersnamelist = {}
+            timers.usersiplist = {}
+            timers.ipsfaucethtml = {}
+            timers.ipsfavicon = {}
+        time.sleep(0.99)
+
 def faucetlog(log): # logger
     print(f"[{time.strftime('%X %x %Z')}] {log}")
     os.system(f"echo [{time.strftime('%X %x %Z')}] {log} >> logfaucet.txt")
-
 
 @app.route("/", methods=["GET"])
 def indexpage():
@@ -58,12 +73,12 @@ def faucetpage():
     return render_template("faucet.html")
 
 @app.route("/faucetchungus", methods=["POST"])
-@limiter.limit("1 per hour")
+@limiter.limit("1 per minute")
 def giveducos():
     if DISABLED: return disabledMessage,500
     randomducoamount = random.uniform(minimumDUCOfromFaucet,maximumDUCOfromFaucet)
     if DEBUG: randomducoamount = 0.00069 # debugging purposes
-
+    socketbuffer = ""
     soc = socket.socket()
     ducoUsername = request.args.get("username")
     faucetlog(f"{request.remote_addr} REQUEST {randomducoamount} by {ducoUsername}")
@@ -75,7 +90,8 @@ def giveducos():
         soc.connect(serveraddress)
         ducoserverVersion = print(soc.recv(8))
         soc.send(bytes(f"LOGI,{faucetUsername},{faucetPassword}",encoding="utf8"))
-        print(soc.recv(80))
+        socketbuffer = soc.recv(80)
+        if DEBUG: print(socketbuffer)
     except:
         faucetlog(f"{request.remote_addr} {ducoUsername} couldnt log in to faucet account")
         return "server sided error: couldnt login to faucet account",500
@@ -94,20 +110,17 @@ def giveducos():
         return "server sided error: server closed connection",500
     try:
         soc.send(bytes(f"SEND,{faucetMessage},{ducoUsername},{randomducoamount}",encoding="utf8"))
-        receivedmessage = soc.recv(320).decode("utf8")
-        if receivedmessage.startswith("OK"):
+        socketbuffer = soc.recv(320).decode("utf8")
+        if socketbuffer.startswith("OK"):
             faucetlog(f"{request.remote_addr} SUCCESS SENT {randomducoamount} to {ducoUsername}")
             return f"success {randomducoamount} sent to {ducoUsername}",200
-        elif receivedmessage.startswith("NO"):
-            print(f"fail: {receivedmessage}")
-            return "couldnt send for some reason lmao contact me if this error occurs",500
+        elif socketbuffer.startswith("NO"):
+            print(f"fail: {socketbuffer}")
+            return f"couldnt send, reason {socketbuffer}",500
     except:
         print("send fail xd")
-        return "couldnt send for some reason lmao contact me if this error occurs electric boogalo 2",500
+        return "couldnt send for some reason lmao this error shouldnt exist at all XDdfofjdsklafjdslajfsdl",500
 
 faucetlog(f"{__name__} Flask app starting debug: {DEBUG}")
-if not __name__ == "__main__":
-    print("imported as python module, exiting")
-    quit()
 
 app.run(debug=DEBUG,host="0.0.0.0",port=PORT)
