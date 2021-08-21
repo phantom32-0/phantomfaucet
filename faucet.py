@@ -151,7 +151,6 @@ def giveducos():
 @app.route("/banhammer",methods=["POST"])
 def banhammer():
     message = request.args.get("message")
-    faucetlog()
     message.split(",")
     if message[0] != faucetPassword:
         return "",404
