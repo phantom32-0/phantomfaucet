@@ -86,7 +86,7 @@ def faucetpage():
     return render_template("faucet.html")
 
 @app.route("/faucetchungus", methods=["POST"])
-@limiter.limit("1 per minute")
+@limiter.limit("1 per 10 second")
 def giveducos():
     if DISABLED: return disabledMessage,500
     randomducoamount = random.uniform(minimumDUCOfromFaucet,maximumDUCOfromFaucet)
@@ -148,7 +148,7 @@ def giveducos():
         print("send fail xd")
         return "couldnt send for some reason lmao this error shouldnt exist at all XDdfofjdsklafjdslajfsdl",500
 
-@app.route("/banhammer",["POST"])
+@app.route("/banhammer",methods=["POST"])
 def banhammer():
     message = request.args.get("message")
     faucetlog()

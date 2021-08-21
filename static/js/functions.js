@@ -19,7 +19,7 @@ function faucetactivate() {
             thebutton.classList.add("is-success")
         }
         else if (response.status == 429){
-            alert("looks like you used the faucet in the last hour! try again later")
+            alert("looks like you are sending a lot of requests! calm down")
         }
         else{
             console.log("did not receive 200 instead received " + response.status + " making the buton red")
