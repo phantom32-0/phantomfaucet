@@ -12,11 +12,13 @@ maximumDUCOfromFaucet = 0.15
 
 # Start import modules
 
-import random,math,socket,threading,asyncio,sys,time,os
+import random,math,socket,threading,asyncio,sys,time,os,requests,json
 from dotenv import load_dotenv
 from flask import Flask, request, render_template
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from requests.sessions import Request
+
 
 load_dotenv()
 random.seed()
@@ -101,52 +103,30 @@ def giveducos():
         faucetlog(f"{request.remote_addr} lmao {ducoUsername} tried to use the faucet but he/she is banned")
         return "uh oh looks like you are banned from using the faucet if you want to get unbanned dm me on duinocoin discord phantom32#5148",400
 
-    if request.remote_addr not in timers.ipsfavicon or request.remote_addr not in timers.ipsfaucethtml or request.remote_addr not in timers.ipsindexhtml:
+    if request.remote_addr not in timers.ipsfaucethtml :
         faucetlog(f"{request.remote_addr} {ducoUsername} doesnt look like he is in all ip lists XD nomoney for yuo")
-        if ducoUsername not in timers.usersnamelist: timers.usersnamelist.append(ducoUsername)
-        return "uh oh, your actions looks like a bot, if you are not a bot contact me on duinocoin discord phantom32#5148",401
+        return "uh oh, your actions looks sussy, if you are not a bot contact me on duinocoin discord phantom32#5148",401
         
     if ducoUsername in timers.usersnamelist or request.remote_addr in timers.usersiplist:
-        return "uh oh, looks like you used the faucet this hour, try again at the start of next hour",400
+        faucetlog(f"{request.remote_addr} {ducoUsername} tried to use the faucet but they used it in the last hour")
+        return f"uh oh, looks like you used the faucet this hour, try again at the start of next hour, debug: {request.remote_addr}",400
+    try:
+        r = requests.get(f"https://{ducoserverAddress}/transaction?username={faucetUsername}&password={faucetPassword}&recipient={ducoUsername}&amount={randomducoamount}&memo={faucetMessage}")
+    except:
+        return "server sided error: couldnt connect to the server, try again in a few minutes",500
+    
+    if DEBUG: print(r.text)
+    serverresponse = json.loads(r.text)
+    serverresponse = serverresponse["result"]
+    serverresponse.split(",")
+    if not serverresponse.startswith('OK'):
+        faucetlog(f"{request.remote_addr} {ducoUsername} fail sending {serverresponse}")
+        return f"uh oh, couldnt send the ducos to {ducoUsername}, reason {serverresponse}",500
+    timers.usersnamelist.append(ducoUsername)
+    timers.usersiplist.append(request.remote_addr)
+    faucetlog(f"{request.remote_addr} SUCCESS SENT {randomducoamount} to {ducoUsername}")
+    return f"yayyyyyyyyyyy sent {randomducoamount} to {ducoUsername} yay you can use the faucet again at the start of the next hour"
 
-    serveraddress = (ducoserverAddress,random.choice(ducosererPorts))
-    try:
-        soc.connect(serveraddress)
-        ducoserverVersion = print(soc.recv(8))
-        soc.send(bytes(f"LOGI,{faucetUsername},{faucetPassword}",encoding="utf8"))
-        socketbuffer = soc.recv(80)
-        if DEBUG: print(socketbuffer)
-    except:
-        faucetlog(f"{request.remote_addr} {ducoUsername} couldnt log in to faucet account")
-        return "server sided error: couldnt login to faucet account",500
-    try:
-        soc.send(bytes(f"BALA,{faucetUsername}",encoding="utf8"))
-        faucetBalance = soc.recv(320).decode("utf8")
-        print(faucetBalance)
-    except:
-        faucetlog(f"{request.remote_addr} {ducoUsername} couldnt retrieve balance")
-        return "server sided error: cannot retrieve faucet balance",500
-    try:
-        if float(faucetBalance) < randomducoamount:
-            return "faucet empty :(",500
-    except:
-        faucetlog(f"{request.remote_addr} {ducoUsername} server closed connection")
-        return "server sided error: server closed connection",500
-    try:
-        soc.send(bytes(f"SEND,{faucetMessage},{ducoUsername},{randomducoamount}",encoding="utf8"))
-        socketbuffer = soc.recv(320).decode("utf8")
-        if socketbuffer.startswith("OK"):
-            timers.usersnamelist.append(ducoUsername)
-            timers.usersiplist.append(request.remote_addr)
-            faucetlog(f"{request.remote_addr} SUCCESS SENT {randomducoamount} to {ducoUsername}")
-            
-            return f"success {randomducoamount} ducos sent to {ducoUsername} yayyyyyyy",200
-        elif socketbuffer.startswith("NO"):
-            socketbuffer.split(",")
-            return f"couldnt send, reason {socketbuffer[1]}",500
-    except:
-        print("send fail xd")
-        return "couldnt send for some reason lmao this error shouldnt exist at all XDdfofjdsklafjdslajfsdl",500
 
 @app.route("/banhammer",methods=["POST"])
 def banhammer():
