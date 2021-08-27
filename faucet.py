@@ -8,7 +8,7 @@ DISABLED = False
 disabledMessage = "faucet is disabled"
 
 minimumDUCOfromFaucet = 0.1
-maximumDUCOfromFaucet = 0.2
+maximumDUCOfromFaucet = 0.15
 
 # Start import modules
 
@@ -32,9 +32,9 @@ limiter = Limiter(
 )
 # Start Global variables
 
-faucetVersion = "Phantom Faucet beta 0.2"
+faucetVersion = "Phantom Faucet beta 0.2.1"
 faucetUsername = "phantom_faucet"
-faucetMessage = "phantom32.tk duinocion fauet come bakc sooon"
+faucetMessage = "phantom32.tk wooohooooooooooooo epic faucet"
 faucetPassword = os.getenv("FAUCET_PASSWORD")
 ducoserverAddress = "server.duinocoin.com"
 ducosererPorts = [2811,2812,2813]
