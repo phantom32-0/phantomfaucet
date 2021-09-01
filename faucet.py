@@ -161,4 +161,5 @@ faucetlog("faucet timer thread starting")
 timerthread = threading.Thread(target=faucettimerreset, args=(), daemon=True)
 timerthread.start()
 
-app.run(debug=DEBUG,host="0.0.0.0",port=PORT)
+if __name__ == "__main__":
+    app.run(debug=DEBUG,host="0.0.0.0",port=PORT)
