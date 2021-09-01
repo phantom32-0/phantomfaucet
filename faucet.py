@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #phentem facet
 
-DEBUG = True
+DEBUG = False
 PORT = 5000
 
 DISABLED = False
@@ -19,7 +19,6 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from requests.sessions import Request
 
-
 load_dotenv()
 random.seed()
 randomducoamount = 0
@@ -28,6 +27,7 @@ randomducoamount = 0
 
 # init Flask application
 app = Flask(__name__)
+
 limiter = Limiter(
     app,
     key_func=get_remote_address
@@ -55,6 +55,16 @@ class timers:
 
 # Start init flask routes
 
+def getip(request): # gets ip of the client
+    if request.headers.getlist("X-Forwarded-For"):
+        return request.headers.getlist("X-Forwarded-For")[0]
+    else:
+        return request.remote_addr
+
+#def discordwebhook(message):
+#    data = {"embeds": [{"description": message }]}
+#    requests.post(os.getenv("DISCORD_WEBHOOK_URL"), json = data)
+
 def faucettimerreset(): # reset the faucet timers at the start of every hour
     while(1):
         if((round(time.time()) % 3600) == 0):
@@ -62,29 +72,23 @@ def faucettimerreset(): # reset the faucet timers at the start of every hour
             timers.usersnamelist = []
             timers.usersiplist = []
             timers.ipsfaucethtml = []
-            timers.ipsfavicon = []
         time.sleep(0.99)
 
 def faucetlog(log): # logger
     print(f"[{time.strftime('%X %x %Z')}] {log}")
     os.system(f"echo [{time.strftime('%X %x %Z')}] {log} >> logfaucet.txt")
-
-@app.route("/favicon.ico", methods=["GET"])
-def faviconpage():
-    if request.remote_addr not in timers.ipsfavicon:
-        timers.ipsfavicon.append(request.remote_addr) # nobody is going to notice a thing
-    return "",404
+    data = {"embeds": [{"description": f"[{time.strftime('%X %x %Z')}] {log}" }]}
+    lolololol = requests.post(os.getenv("DISCORD_WEBHOOK_URL"), json = data)
 
 @app.route("/", methods=["GET"])
 def indexpage():
-    if request.remote_addr not in timers.ipsindexhtml:
-        timers.ipsindexhtml.append(request.remote_addr)
+
     return render_template("index.html", faucetversion=faucetVersion)
 
 @app.route("/faucet", methods=["GET"])
 def faucetpage():
-    if request.remote_addr not in timers.ipsfaucethtml:
-        timers.ipsfaucethtml.append(request.remote_addr)
+    if getip(request) not in timers.ipsfaucethtml:
+        timers.ipsfaucethtml.append(getip(request))
     return render_template("faucet.html")
 
 @app.route("/faucetchungus", methods=["POST"])
@@ -96,35 +100,38 @@ def giveducos():
     socketbuffer = ""
     soc = socket.socket()
     ducoUsername = request.args.get("username")
-    faucetlog(f"{request.remote_addr} REQUEST {randomducoamount} by {ducoUsername}")
+    faucetlog(f"REQUEST {randomducoamount} by {ducoUsername}")
     if not ducoUsername: return "enter a username you dum dum",404
 
     if ducoUsername in bannedlist:
-        faucetlog(f"{request.remote_addr} lmao {ducoUsername} tried to use the faucet but he/she is banned")
+        faucetlog(f"lmao {ducoUsername} tried to use the faucet but he/she is banned")
         return "uh oh looks like you are banned from using the faucet if you want to get unbanned dm me on duinocoin discord phantom32#5148",400
 
-    if request.remote_addr not in timers.ipsfaucethtml :
-        faucetlog(f"{request.remote_addr} {ducoUsername} doesnt look like he is in all ip lists XD nomoney for yuo")
+    if getip(request) not in timers.ipsfaucethtml :
+        faucetlog(f"{ducoUsername} doesnt look like he is in all ip lists XD nomoney for yuo")
         return "uh oh, your actions looks sussy, if you are not a bot contact me on duinocoin discord phantom32#5148",401
         
-    if ducoUsername in timers.usersnamelist or request.remote_addr in timers.usersiplist:
-        faucetlog(f"{request.remote_addr} {ducoUsername} tried to use the faucet but they used it in the last hour")
-        return f"uh oh, looks like you used the faucet this hour, try again at the start of next hour, debug: {request.remote_addr}",400
+    if ducoUsername in timers.usersnamelist or getip(request) in timers.usersiplist:
+        faucetlog(f"{ducoUsername} tried to use the faucet but they used it in the last hour")
+        return f"uh oh, looks like you used the faucet this hour, try again at the start of next hour, debug: {getip(request)}",400
     try:
         r = requests.get(f"https://{ducoserverAddress}/transaction?username={faucetUsername}&password={faucetPassword}&recipient={ducoUsername}&amount={randomducoamount}&memo={faucetMessage}")
-    except:
-        return "server sided error: couldnt connect to the server, try again in a few minutes",500
-    
+        r.raise_for_status()
+    except Exception as e:
+        faucetlog(f"{ducoUsername} couldnt request transaction oops {e}")
+        return "couldnt connect to the master server oops try again later",500
     if DEBUG: print(r.text)
     serverresponse = json.loads(r.text)
+
     serverresponse = serverresponse["result"]
+
     serverresponse.split(",")
     if not serverresponse.startswith('OK'):
-        faucetlog(f"{request.remote_addr} {ducoUsername} fail sending {serverresponse}")
+        faucetlog(f"{ducoUsername} fail sending {serverresponse}")
         return f"uh oh, couldnt send the ducos to {ducoUsername}, reason {serverresponse}",500
     timers.usersnamelist.append(ducoUsername)
-    timers.usersiplist.append(request.remote_addr)
-    faucetlog(f"{request.remote_addr} SUCCESS SENT {randomducoamount} to {ducoUsername}")
+    timers.usersiplist.append(getip(request))
+    faucetlog(f"SUCCESS SENT {randomducoamount} to {ducoUsername}")
     return f"yayyyyyyyyyyy sent {randomducoamount} to {ducoUsername} yay you can use the faucet again at the start of the next hour"
 
 
@@ -135,14 +142,14 @@ def banhammer():
     if message[0] != faucetPassword:
         return "",404
     if message[1] not in bannedlist:
-        faucetlog(f"{request.remote_addr} THE BAN HAMMER HAS SPOKEN: banned user {message[1]}")
+        faucetlog(f"{getip(request)} THE BAN HAMMER HAS SPOKEN: banned user {message[1]}")
         bannedlist.append(message[1])
         file = open("blacklist.txt","w")
         file.write(bannedlist)
         file.close()
         return f"success banned {message[1]}, new ban list is {bannedlist}",200
     else:
-        faucetlog(f"{request.remote_addr} THE BAN HAMMER HAS SPOKEN: couldnt ban user becase its albeady banned lmao {message[1]}")
+        faucetlog(f"{getip(request)} THE BAN HAMMER HAS SPOKEN: couldnt ban user becase its albeady banned lmao {message[1]}")
         return f"the user {message[1]} is already bannedl ol the ban list is {bannedlist}"
 
 faucetlog(f"{__name__} Flask app starting debug: {DEBUG}")
