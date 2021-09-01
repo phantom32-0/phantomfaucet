@@ -34,7 +34,7 @@ limiter = Limiter(
 )
 # Start Global variables
 
-faucetVersion = "Phantom Faucet beta 0.2.1"
+faucetVersion = "Phantom Faucet beta 0.3"
 faucetUsername = "phantom_faucet"
 faucetMessage = "phantom32.tk wooohooooooooooooo epic faucet"
 faucetPassword = os.getenv("FAUCET_PASSWORD")
