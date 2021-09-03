@@ -6,7 +6,9 @@ i will provide absolutely **zero** support for running this server on your own
 
 requirements:  
 - python 3.7+
+- requests
 - flask
 - flask-limiter
+- python-dotenv
 
 this software is licensed under the terms of MIT License
